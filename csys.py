@@ -1,59 +1,69 @@
-import urx
-import math3d as m3d
 from scipy.spatial.transform import Rotation as R
 import numpy as np
 
+def euler_to_quaternion(xr, yr, zr, degree=False):
+    '''
+    Input:
+    Rotation-Angles: xr,yr,zr
+    degree: Bool-Type, is in degree
 
-r = urx.URRobot("192.168.2.2", use_rt=True, urFirm=5.9)
+    Converts Euler-Angles into Quaternion-Angles
+    '''
 
-csys_point = r.getl()
-local_point = [0.1,0.1,0,0,0,0]
-print(csys_point)
+    # create the rotation from euler angles
+    rotation = R.from_euler('xyz', [xr, yr, zr], degrees=degree)
 
-def euler_to_quaternion(xr, yr, zr):
-    # Erstelle eine Rotation aus den Euler-Winkeln (in Radian)
-    rotation = R.from_euler('xyz', [xr, yr, zr], degrees=False)
-    # Konvertiere die Rotation in ein Quaternion
+    # convert rotations into quaternions
     quaternion = rotation.as_quat()
+
     return quaternion
 
-def local_to_global(local_point, local_rotation, origin, origin_rotation):
-    # Erstelle Rotationen aus den Quaternions
-    local_rot = R.from_quat(local_rotation)
-    origin_rot = R.from_quat(origin_rotation)
+def local_to_global(local_point, origin_point, degree=False):
+    '''
+    Input:
+    Local-Point: Point in Local-Coordinatesystem (in Shape X,Y,Z,XR,YR,ZR).
+    Simply type in 0 for Rs if there is no rotation
+    Origin-Point: Origin-Point of Local-Coordinatesystem, same Shape as Local-Point
+    degree: Bool-Type, is in degree
+
+    Converts Local_Point in Local-Coordinatesystem into Global-Point
+    '''
+
+    # create rotations from quaternions
+    local_rot = R.from_quat(euler_to_quaternion(local_point[3],local_point[4],local_point[5]))
+    origin_rot = R.from_quat(euler_to_quaternion(origin_point[3],origin_point[4], origin_point[5]))
     
-    # Kombiniere die Rotationen
+    # combine rotations
     combined_rotation = origin_rot * local_rot
     
-    # Wende die kombinierte Rotation auf den lokalen Punkt an
+    # apply combined rotations of local-point
     rotated_point = combined_rotation.apply(local_point[:3])
     
-    # Verschiebe den Punkt in das globale Koordinatensystem
-    global_point = rotated_point + origin[:3]
+    # tranlate point to global-coordinatesysten
+    global_point = rotated_point + origin_point[:3]
     
-    # Kombiniere die Rotationen für die Ausgabe
-    global_rotation = combined_rotation.as_euler('xyz', degrees=False)
+    # combine rotations for global-point
+    global_rotation = combined_rotation.as_euler('xyz', degrees=degree)
     
     return np.concatenate((global_point, global_rotation))
 
-# Beispielwerte
-local_point = local_point  # Lokale Koordinaten des Punktes (x, y, z, xr, yr, zr)
-origin = csys_point       # Ursprung des lokalen Koordinatensystems (x, y, z, xr, yr, zr)
 
-# Berechne die Quaternions aus den Euler-Winkeln
-local_rotation = euler_to_quaternion(local_point[3], local_point[4], local_point[5])
-origin_rotation = euler_to_quaternion(origin[3], origin[4], origin[5])
+if __name__ == '__main__':
+    
+    # example
 
-# Berechne die globalen Koordinaten des Punktes
-global_point = local_to_global(local_point[:3], local_rotation, origin[:3], origin_rotation)
-global_point_back = local_to_global([x * -1 for x in local_point[:3]], local_rotation, origin[:3], origin_rotation)
-global_point_origin = local_to_global([x * 0 for x in local_point[:3]], local_rotation, origin[:3], origin_rotation)
+    local_point = [10,0,0,0,0,0]
+    # local coordinates of local point (x, y, z, xr, yr, zr)
+    print('Local-Point:')
+    print(local_point, '\n')
 
-print(global_point)
+    origin_point = [50,100,0,np.radians(180),0,0]
+    # origin of local-coordinatesystem (x, y, z, xr, yr, zr)
+    print('Origin of Local-Coordinatesystem:')
+    print(origin_point, '\n')
 
-r.movel(global_point,0.1,0.1)
-r.movel(global_point_back,0.1,0.1)
-r.movel(global_point_origin,0.1,0.1)
+    # calculate global_point with global coordinates
+    global_point = local_to_global(local_point, origin_point)
+    print('Global-Point:')
+    print(global_point)
 
-
-r.close()
