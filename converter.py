@@ -18,7 +18,7 @@ def euler_to_quaternion(xr, yr, zr, degree=False):
 
     return quaternion
 
-def local_to_global(local_point, origin_point, degree=False):
+def local_to_global(local_point, origin_point, degree=False, use_quarternion=False):
     '''
     Input:
     Local-Point: Point in Local-Coordinatesystem (in Shape X,Y,Z,XR,YR,ZR).
@@ -28,10 +28,15 @@ def local_to_global(local_point, origin_point, degree=False):
 
     Converts Local_Point in Local-Coordinatesystem into Global-Point
     '''
-
-    # create rotations from quaternions
-    local_rot = R.from_quat(euler_to_quaternion(local_point[3],local_point[4],local_point[5]))
-    origin_rot = R.from_quat(euler_to_quaternion(origin_point[3],origin_point[4], origin_point[5]))
+    if use_quarternion:
+        # create rotations from quaternions
+        print('with quaternions')
+        local_rot = R.from_quat(euler_to_quaternion(local_point[3],local_point[4],local_point[5]))
+        origin_rot = R.from_quat(euler_to_quaternion(origin_point[3],origin_point[4], origin_point[5]))
+    if not use_quarternion:
+        print('without quaternions')
+        local_rot = R.from_euler('XYZ', [local_point[3],local_point[4], local_point[5]], degrees=degree)
+        origin_rot = R.from_euler('XYZ', [origin_point[3],origin_point[4], origin_point[5]], degrees=degree)
     
     # combine rotations
     combined_rotation = origin_rot * local_rot
@@ -43,7 +48,7 @@ def local_to_global(local_point, origin_point, degree=False):
     global_point = rotated_point + origin_point[:3]
     
     # combine rotations for global-point
-    global_rotation = combined_rotation.as_euler('xyz', degrees=degree)
+    global_rotation = combined_rotation.as_euler('XYZ', degrees=degree)
     
     return np.concatenate((global_point, global_rotation))
 
@@ -52,7 +57,7 @@ if __name__ == '__main__':
     
     # example
 
-    local_point = [10,0,0,0,0,0]
+    local_point = [0,0,50,np.radians(90),0,0]
     # local coordinates of local point (x, y, z, xr, yr, zr)
     print('Local-Point:')
     print(local_point, '\n')
@@ -63,7 +68,10 @@ if __name__ == '__main__':
     print(origin_point, '\n')
 
     # calculate global_point with global coordinates
-    global_point = local_to_global(local_point, origin_point)
+    global_point = local_to_global(local_point, origin_point, use_quarternion=False)
     print('Global-Point:')
-    print(global_point)
+    print(global_point[:3],np.rad2deg(global_point[3:]))
+
+#1. degtorad nutzen statt radians auch beides das gleiche ergebnis
+#2. euler mit gimballock gefahr probieren liefert gleiches ergebnis
 
