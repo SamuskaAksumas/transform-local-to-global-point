@@ -35,8 +35,8 @@ def local_to_global(local_point, origin_point, degree=False, use_quarternion=Fal
         origin_rot = R.from_quat(euler_to_quaternion(origin_point[3],origin_point[4], origin_point[5]))
     if not use_quarternion:
         print('without quaternions')
-        local_rot = R.from_euler('XYZ', [local_point[3],local_point[4], local_point[5]], degrees=degree)
-        origin_rot = R.from_euler('XYZ', [origin_point[3],origin_point[4], origin_point[5]], degrees=degree)
+        local_rot = R.from_euler('xyz', [local_point[3],local_point[4], local_point[5]], degrees=degree)
+        origin_rot = R.from_euler('xyz', [origin_point[3],origin_point[4], origin_point[5]], degrees=degree)
     
     # combine rotations
     combined_rotation = origin_rot * local_rot
@@ -48,7 +48,7 @@ def local_to_global(local_point, origin_point, degree=False, use_quarternion=Fal
     global_point = rotated_point + origin_point[:3]
     
     # combine rotations for global-point
-    global_rotation = combined_rotation.as_euler('XYZ', degrees=degree)
+    global_rotation = combined_rotation.as_euler('xyz', degrees=degree)
     
     return np.concatenate((global_point, global_rotation))
 
