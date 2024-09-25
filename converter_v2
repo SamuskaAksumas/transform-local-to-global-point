@@ -1,0 +1,82 @@
+import numpy as np
+from scipy.spatial.transform import Rotation as R
+
+# Rotationsmatrizen für die Achsen
+def rotation_matrix_x(xr):
+    return np.array([
+        [1, 0, 0],
+        [0, np.cos(xr), -np.sin(xr)],
+        [0, np.sin(xr), np.cos(xr)]
+    ])
+
+def rotation_matrix_y(yr):
+    return np.array([
+        [np.cos(yr), 0, np.sin(yr)],
+        [0, 1, 0],
+        [-np.sin(yr), 0, np.cos(yr)]
+    ])
+
+def rotation_matrix_z(zr):
+    return np.array([
+        [np.cos(zr), -np.sin(zr), 0],
+        [np.sin(zr), np.cos(zr), 0],
+        [0, 0, 1]
+    ])
+
+# Funktion zum Anwenden eines Schwellwerts (Toleranz) auf die Matrix
+def apply_threshold(matrix, threshold=1e-12):
+    matrix[np.abs(matrix) < threshold] = 0
+    return matrix
+
+# Transformation Funktion
+def transform_point(x, y, z, xr, yr, zr, point):
+    # Rotationsmatrix berechnen
+    R_x = rotation_matrix_x(xr)
+    R_y = rotation_matrix_y(yr)
+    R_z = rotation_matrix_z(zr)
+    print(R_x)
+    print(R_y)
+    print(R_z)
+    
+    # Rotationsmatrix von Rundungsfehlern säubern
+    R_x = apply_threshold(R_x)
+    R_y = apply_threshold(R_y)
+    R_z = apply_threshold(R_z)
+    print(R_x)
+    print(R_y)
+    print(R_z)
+    
+    # Gesamtrotationsmatrix
+    R_combined = R_z @ R_y @ R_x
+    print('r_comb:',R_combined)
+    
+    # Translationsvektor
+    d = np.array([x, y, z])
+    
+    # Homogene Transformationsmatrix
+    T = np.eye(4)
+    T[:3, :3] = R_combined
+    T[:3, 3] = d
+    print('T:',T)
+    
+    # Punkt in homogenen Koordinaten
+    point_hom = np.append(point, 1)
+    
+    # Transformierter Punkt im globalen System
+    point_global_hom = T @ point_hom
+    global_position = point_global_hom[:3]
+    print('global point:',global_position)
+
+    # Extrahiere globale Orientierung in Euler-Winkeln
+    rotation = R.from_matrix(R_combined)
+    global_orientation = rotation.as_euler('xyz', degrees=True)  # Euler-Winkel in Grad
+    
+    # Rückgabe der globalen Position und Orientierung
+    return np.concatenate((global_position, global_orientation))
+
+# Beispiel für Transformation
+lokales_system = (2, 3, 4, np.radians(180), np.radians(180), np.radians(0))
+lokaler_punkt = np.array([0, 0, 1])
+
+globaler_punkt = transform_point(*lokales_system, lokaler_punkt)
+print("Transformierter Punkt im globalen System:", globaler_punkt)

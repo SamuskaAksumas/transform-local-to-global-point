@@ -11,7 +11,7 @@ def euler_to_quaternion(xr, yr, zr, degree=False):
     '''
 
     # create the rotation from euler angles
-    rotation = R.from_euler('xyz', [xr, yr, zr], degrees=degree)
+    rotation = R.from_euler('XYZ', [xr, yr, zr], degrees=degree)
 
     # convert rotations into quaternions
     quaternion = rotation.as_quat()
@@ -35,8 +35,8 @@ def local_to_global(local_point, origin_point, degree=False, use_quarternion=Fal
         origin_rot = R.from_quat(euler_to_quaternion(origin_point[3],origin_point[4], origin_point[5]))
     if not use_quarternion:
         print('without quaternions')
-        local_rot = R.from_euler('xyz', [local_point[3],local_point[4], local_point[5]], degrees=degree)
-        origin_rot = R.from_euler('xyz', [origin_point[3],origin_point[4], origin_point[5]], degrees=degree)
+        local_rot = R.from_euler('XYZ', [local_point[3],local_point[4], local_point[5]], degrees=degree)
+        origin_rot = R.from_euler('XYZ', [origin_point[3],origin_point[4], origin_point[5]], degrees=degree)
     
     # combine rotations
     combined_rotation = origin_rot * local_rot
@@ -57,21 +57,33 @@ if __name__ == '__main__':
     
     # example
 
-    local_point = [0,0,50,np.radians(90),0,0]
+    local_point = [0,0,50,0,0,0]
     # local coordinates of local point (x, y, z, xr, yr, zr)
     print('Local-Point:')
     print(local_point, '\n')
 
-    origin_point = [50,100,0,np.radians(180),0,0]
+    origin_point = [50,100,0,180,0,0]
     # origin of local-coordinatesystem (x, y, z, xr, yr, zr)
     print('Origin of Local-Coordinatesystem:')
     print(origin_point, '\n')
 
     # calculate global_point with global coordinates
-    global_point = local_to_global(local_point, origin_point, use_quarternion=False)
-    print('Global-Point:')
-    print(global_point[:3],np.rad2deg(global_point[3:]))
+    global_point = local_to_global(local_point, origin_point, use_quarternion=True, degree=True)
+    print('Global-Point with quats:')
+    print(global_point[:3],global_point[3:])
+
+    # calculate global_point with global coordinates
+    global_point_1 = local_to_global(local_point, origin_point, use_quarternion=False, degree=True)
+    print('Global-Point without quats:')
+    print(global_point_1[:3],np.rad2deg(global_point_1[3:]))
 
 #1. degtorad nutzen statt radians auch beides das gleiche ergebnis
 #2. euler mit gimballock gefahr probieren liefert gleiches ergebnis
+#3. round probieren und minimale rundungsfehler auszugleichen
+#4. deg input nutzen
+
+'''
+ohne quats geht die transformation richtig aber die rotationen ist falsch
+mit quats ist auch die translation falsch
+'''
 
